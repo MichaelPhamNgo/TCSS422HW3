@@ -56,6 +56,8 @@ typedef struct _nProcess {
   struct _nProcess * next;
 } nProcess;
 
+//the pointer copy_head to copy the pointer head
+//the purpose of this pointer is to iterate the entire linked list and write data to the proc_report
 nProcess *copy_head = NULL; 
 
 //Reference: https://www.log2base2.com/data-structures/linked-list/inserting-a-node-at-the-end-of-a-linked-list.html
@@ -135,6 +137,7 @@ unsigned long virt2phys(struct mm_struct * mm, unsigned long virt) {
 static int my_proc_show(struct seq_file *m,void *v){	  
 	seq_printf(m, "PROCESS REPORT: \n");
   seq_printf(m, "proc_id,proc_name,contig_pages,noncontig_pages,total_pages \n");
+  //iterate the entire linked list
   while (copy_head != NULL) {
     //print proc_id,proc_name,contig_pages,noncontig_pages,total_pages
     seq_printf(m,"%d,%s,%d,%d,%d\n", copy_head->proc_id, copy_head->proc_name,
@@ -216,10 +219,12 @@ int proc_init (void) {
     }
   }
 
-  //allocate memory for the node
+  //allocate memory for pointer copy_head
   copy_head = kmalloc(sizeof(nProcess), GFP_KERNEL);  
 
+  //copy pointer head to prepare getting data in the linked list
   *copy_head = *head;
+  
   //print report in /var/log/syslog
   report(head); 
 
