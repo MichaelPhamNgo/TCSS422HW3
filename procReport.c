@@ -32,14 +32,6 @@
   * $sudo cat /proc/proc_report
   */
 
-/**
-  * BUGS
-  * - Although /proc/proc_report is created, its content is
-  *     "PROCESS REPORT: 
-  *      proc_id,proc_name,contig_pages,noncontig_pages,total_pages  
-  * - I'm not able to print every line of the report to the /proc/proc_report file
-  */  
-
 /*************** Module Descriptions ***************/
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Phuc Pham N");
@@ -63,6 +55,8 @@ typedef struct _nProcess {
   int total_pages;
   struct _nProcess * next;
 } nProcess;
+
+nProcess *copy_head = NULL; 
 
 //Reference: https://www.log2base2.com/data-structures/linked-list/inserting-a-node-at-the-end-of-a-linked-list.html
 /**
@@ -138,9 +132,15 @@ unsigned long virt2phys(struct mm_struct * mm, unsigned long virt) {
 
 //Reference https://gist.github.com/BrotherJing/c9c5ffdc9954d998d1336711fa3a6480#file-helloproc-c-L7
 /*** write a kernel module, which create a read/write proc file ***/
-static int my_proc_show(struct seq_file *m,void *v){	
+static int my_proc_show(struct seq_file *m,void *v){	  
 	seq_printf(m, "PROCESS REPORT: \n");
   seq_printf(m, "proc_id,proc_name,contig_pages,noncontig_pages,total_pages \n");
+  while (copy_head != NULL) {
+    //print proc_id,proc_name,contig_pages,noncontig_pages,total_pages
+    seq_printf(m,"%d,%s,%d,%d,%d\n", copy_head->proc_id, copy_head->proc_name,
+        copy_head->contig_pages, copy_head->noncontig_pages, copy_head->total_pages);    
+    copy_head = copy_head->next;
+  }   
   seq_printf(m, "TOTALS,,%d,%d,%d\n", totalConPages, totalNonconPages, totalPages); 
 	return 0;
 }
@@ -214,7 +214,12 @@ int proc_init (void) {
       //insert the new node to the linked list
       insert(&head,newNode);        
     }
-  }  
+  }
+
+  //allocate memory for the node
+  copy_head = kmalloc(sizeof(nProcess), GFP_KERNEL);  
+
+  *copy_head = *head;
   //print report in /var/log/syslog
   report(head); 
 
